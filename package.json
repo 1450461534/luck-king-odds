@@ -1,0 +1,10 @@
+{
+  "name": "luck-king-odds",
+  "version": "1.0.0",
+  "description": "运气王预言家：根据已抢金额反推拼手气红包总额，估算你成为运气王的概率",
+  "scripts": {
+    "test": "node test.mjs",
+    "demo": "node demo.mjs"
+  },
+  "license": "MIT"
+}
