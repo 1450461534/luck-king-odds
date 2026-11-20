@@ -9,6 +9,7 @@ import android.os.Handler
 import android.os.Looper
 import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.LinearLayout
@@ -123,7 +124,7 @@ object FloatingResult {
         )
         lp.gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
         lp.y = dp(48)
-        lp.horizontalMargin = dp(12)
+        lp.horizontalMargin = dp(12).toFloat()
 
         wm.addView(box, lp)
         view = box

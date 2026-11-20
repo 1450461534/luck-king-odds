@@ -49,7 +49,9 @@ class RedPacketService : AccessibilityService() {
         fun walk(n: AccessibilityNodeInfo?) {
             if (n == null) return
             n.text?.toString()?.takeIf { it.isNotBlank() }?.let { text ->
-                nodes.add(n.boundsInScreen.top to text)
+                val rect = android.graphics.Rect()
+                n.getBoundsInScreen(rect)
+                nodes.add(rect.top to text)
             }
             for (i in 0 until n.childCount) walk(n.getChild(i))
         }
