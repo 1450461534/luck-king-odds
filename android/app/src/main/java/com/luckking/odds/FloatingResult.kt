@@ -29,7 +29,44 @@ object FloatingResult {
     private var windowManager: WindowManager? = null
 
     fun show(context: Context, rows: String) {
-        main.post { showInternal(context.applicationContext, rows) }
+        main.post {
+            try {
+                showInternal(context.applicationContext, rows)
+            } catch (e: Exception) {
+                // 悬浮窗失败（个别 ROM 限制叠加层）→ 通知兜底，错误信息可见
+                notifyFallback(context.applicationContext, rows, e)
+            }
+        }
+    }
+
+    /** 悬浮窗不可用时的通知兜底（无障碍服务上下文可发通知） */
+    private fun notifyFallback(context: Context, rows: String, e: Exception) {
+        try {
+            val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+            if (android.os.Build.VERSION.SDK_INT >= 26) {
+                nm.createNotificationChannel(
+                    android.app.NotificationChannel("lko", "红包检测", android.app.NotificationManager.IMPORTANCE_DEFAULT)
+                )
+            }
+            val pi = android.app.PendingIntent.getActivity(
+                context, 0,
+                Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                android.app.PendingIntent.FLAG_IMMUTABLE
+            )
+            val builder = if (android.os.Build.VERSION.SDK_INT >= 26) {
+                android.app.Notification.Builder(context, "lko")
+            } else {
+                android.app.Notification.Builder(context)
+            }
+            builder.setContentTitle("🧧 检测到红包详情页")
+                .setContentText("已读取 " + rows.split("\n").size + " 行（悬浮窗异常: " + (e.message ?: "?") + "），点此查看预测")
+                .setSmallIcon(android.R.drawable.ic_menu_view)
+                .setContentIntent(pi)
+                .setAutoCancel(true)
+            nm.notify(1, builder.build())
+        } catch (e2: Exception) {
+            // 通知也失败时静默（保持服务存活）
+        }
     }
 
     /** H5 计算完成后更新悬浮摘要（任意线程调用，内部切主线程） */

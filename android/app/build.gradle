@@ -11,13 +11,27 @@ android {
         applicationId 'com.luckking.odds'
         minSdk 26
         targetSdk 34
-        versionCode 3
-        versionName '1.0.2'
+        versionCode 4
+        versionName '1.0.3'
+    }
+
+    signingConfigs {
+        appSign {
+            storeFile rootProject.file('keystore/lko.p12')
+            storePassword 'luckking'
+            keyAlias 'lkoking'
+            keyPassword 'luckking'
+            storeType 'PKCS12'
+        }
     }
 
     buildTypes {
+        debug {
+            signingConfig signingConfigs.appSign
+        }
         release {
             minifyEnabled false
+            signingConfig signingConfigs.appSign
         }
     }
     compileOptions {
@@ -30,5 +44,6 @@ android {
 }
 
 // 零第三方依赖：只用 Android SDK 本身，WebView 里跑网页版全部计算逻辑
+// keystore/lko.p12 为项目自包含的固定签名证书（纯本地玩具应用，仅用于升级连续性）
 dependencies {
 }

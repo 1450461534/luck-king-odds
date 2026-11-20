@@ -642,7 +642,8 @@
   if (window.LuckBridge) {
     const dz = $('dropzone');
 
-    function renderAndroidStatus(enabled) {
+    function renderAndroidStatus(st) {
+      const enabled = !!st.serviceEnabled;
       dz.innerHTML = '';
       dz.style.border = 'none';
       dz.style.cursor = 'default';
@@ -657,12 +658,16 @@
       const sub = document.createElement('div');
       sub.className = 'dz-sub';
 
+      const ev = document.createElement('div');
+      ev.style.cssText = 'font-size:12px;color:#8a8a90;margin-top:10px;';
+      ev.textContent = '服务状态诊断 · 最近收到微信事件: ' + (st.lastEvent || '尚未收到');
+
       const btn = document.createElement('button');
       btn.style.cssText = 'margin-top:16px;padding:12px 26px;background:#d0453e;color:#fff;font-size:15px;font-weight:600;border:none;border-radius:10px;cursor:pointer;';
 
       if (enabled) {
         main.textContent = '✅ 读屏服务已开启';
-        sub.textContent = '现在去微信打开一个红包详情页，悬浮窗会自动出现。点击「查看预测」回到本页看结果。';
+        sub.textContent = '现在去微信打开一个红包详情页，悬浮窗会自动出现。点击「查看预测」回到本页看结果。如果没弹出，看下方诊断时间是否在刷新。';
         btn.textContent = '重新打开设置';
         btn.onclick = () => window.LuckBridge.openAccessibilitySettings();
       } else {
@@ -680,12 +685,13 @@
       dz.appendChild(icon);
       dz.appendChild(main);
       dz.appendChild(sub);
+      dz.appendChild(ev);
       dz.appendChild(btn);
     }
 
     window.__androidStatus = function (st) {
       try {
-        renderAndroidStatus(!!st.serviceEnabled);
+        renderAndroidStatus(st);
         return true;
       } catch (e) { return false; }
     };

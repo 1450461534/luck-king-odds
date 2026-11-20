@@ -80,7 +80,9 @@ class MainActivity : Activity() {
     }
 
     private fun pushStatus() {
-        val json = JSONObject().put("serviceEnabled", isServiceEnabled())
+        val json = JSONObject()
+            .put("serviceEnabled", isServiceEnabled())
+            .put("lastEvent", RedPacketService.lastEventTime)
         webView.evaluateJavascript("window.__androidStatus && window.__androidStatus($json)", null)
     }
 
