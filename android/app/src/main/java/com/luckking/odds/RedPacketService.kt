@@ -91,6 +91,12 @@ class RedPacketService : AccessibilityService() {
             return
         }
         val rootPkg = root.packageName?.toString() ?: "?"
+        // 核心校验：只处理微信窗口。事件到达后 700ms 内用户可能切回桌面/本应用，
+        // 此时 rootInActiveWindow 已不是微信——读到的是别的窗口内容，必须跳过
+        if (rootPkg != "com.tencent.mm") {
+            dbg("✗ 跳过：当前活动窗口是 $rootPkg（不是微信），不处理")
+            return
+        }
         val nodes = mutableListOf<Pair<Int, String>>()
         fun walk(n: AccessibilityNodeInfo?) {
             if (n == null) return
@@ -102,7 +108,7 @@ class RedPacketService : AccessibilityService() {
             for (i in 0 until n.childCount) walk(n.getChild(i))
         }
         walk(root)
-        dbg("root包名=$rootPkg，收集到 ${nodes.size} 个文本节点")
+        dbg("root=微信，收集到 ${nodes.size} 个文本节点")
 
         if (nodes.isEmpty()) {
             dbg("✗ 窗口内没有文本节点（可能窗口被 ROM 隔离）")

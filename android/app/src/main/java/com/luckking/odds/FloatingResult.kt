@@ -33,7 +33,10 @@ object FloatingResult {
             try {
                 showInternal(context.applicationContext, rows)
             } catch (e: Exception) {
-                // 悬浮窗失败（个别 ROM 限制叠加层）→ 通知兜底，错误信息可见
+                // 悬浮窗失败（个别 ROM 限制叠加层）→ 通知兜底，失败原因写入诊断日志
+                RedPacketService.debugLog =
+                    "[${java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.CHINA).format(java.util.Date())}] ✗ 悬浮窗 addView 失败: " +
+                        (e.message ?: e.javaClass.simpleName) + " → 已改用系统通知\n" + RedPacketService.debugLog.take(1800)
                 notifyFallback(context.applicationContext, rows, e)
             }
         }
@@ -64,8 +67,13 @@ object FloatingResult {
                 .setContentIntent(pi)
                 .setAutoCancel(true)
             nm.notify(1, builder.build())
+            RedPacketService.debugLog =
+                "[${java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.CHINA).format(java.util.Date())}] ✓ 悬浮窗失败，已发系统通知兜底\n" +
+                    RedPacketService.debugLog.take(1800)
         } catch (e2: Exception) {
-            // 通知也失败时静默（保持服务存活）
+            RedPacketService.debugLog =
+                "[${java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.CHINA).format(java.util.Date())}] ✗ 通知兜底也失败: " +
+                    (e2.message ?: e2.javaClass.simpleName) + "\n" + RedPacketService.debugLog.take(1800)
         }
     }
 
