@@ -91,8 +91,10 @@ class RedPacketService : AccessibilityService() {
 
         lastSent = rows
         pendingRows = rows
+        // 双通道：悬浮窗始终弹出（叠加层自带权限）；MainActivity 存活时 WebView 同步收数据
+        FloatingResult.show(this, rows)
         val sink = uiSink
-        if (sink != null) sink(rows) else FloatingResult.show(this, rows)
+        if (sink != null) sink(rows)
     }
 
     override fun onInterrupt() {
