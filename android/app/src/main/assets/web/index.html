@@ -279,13 +279,9 @@
 </body>
 </html>
 <script>
-// APK 读屏模式：隐藏上传视图，改为提示打开微信红包详情页
+// APK 读屏模式：只改提示文案（状态卡由 app.js 渲染进上传区）
 if (window.LuckBridge) {
-  (function () {
-    const dz = document.getElementById('view-upload');
-    if (dz) dz.classList.add('hidden');
-    const tag = document.querySelector('.tagline');
-    if (tag) tag.textContent = '🤖 读屏模式：打开微信红包详情页即可自动识别';
-  })();
+  const tag = document.querySelector('.tagline');
+  if (tag) tag.textContent = '🤖 读屏模式：打开微信红包详情页即可自动识别';
 }
 </script>

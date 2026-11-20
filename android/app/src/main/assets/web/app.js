@@ -400,6 +400,16 @@
     const { records, n, meIdx, finished, luckyIdx } = ctx;
     const obsNames = records.map(r => r.name);
 
+    // APK 桥接：结果回传悬浮窗（网页环境中 window.LuckBridge 不存在，自动跳过）
+    if (window.LuckBridge) {
+      try {
+        window.LuckBridge.onResult(JSON.stringify({
+          isFinished: finished,
+          pLuckyMe: result.pLuckyMe
+        }));
+      } catch (e) { /* 桥接失败不影响页面 */ }
+    }
+
     // ---- 主卡片 ----
     if (finished) {
       $('bigP').textContent = '🧧 已抢完';
@@ -625,4 +635,62 @@
     } catch (e) { return false; }
   };
   window.__appReady = true;
+
+  // ---------------------------------------------------------------------------
+  // APK 读屏模式：上传区替换为「权限状态卡」（网页环境中无 LuckBridge，自动跳过）
+  // ---------------------------------------------------------------------------
+  if (window.LuckBridge) {
+    const dz = $('dropzone');
+
+    function renderAndroidStatus(enabled) {
+      dz.innerHTML = '';
+      dz.style.border = 'none';
+      dz.style.cursor = 'default';
+
+      const icon = document.createElement('div');
+      icon.className = 'dz-icon';
+      icon.textContent = '🤖';
+
+      const main = document.createElement('div');
+      main.className = 'dz-main';
+
+      const sub = document.createElement('div');
+      sub.className = 'dz-sub';
+
+      const btn = document.createElement('button');
+      btn.style.cssText = 'margin-top:16px;padding:12px 26px;background:#d0453e;color:#fff;font-size:15px;font-weight:600;border:none;border-radius:10px;cursor:pointer;';
+
+      if (enabled) {
+        main.textContent = '✅ 读屏服务已开启';
+        sub.textContent = '现在去微信打开一个红包详情页，悬浮窗会自动出现。点击「查看预测」回到本页看结果。';
+        btn.textContent = '重新打开设置';
+        btn.onclick = () => window.LuckBridge.openAccessibilitySettings();
+      } else {
+        main.textContent = '第一步：开启读屏权限';
+        sub.innerHTML = '点击下方按钮跳转到系统无障碍设置，找到「运气王预言家」并开启。<br>开启后回到本应用，然后去微信打开红包详情页。';
+        btn.textContent = '开启读屏（跳转系统设置）';
+        btn.onclick = () => window.LuckBridge.openAccessibilitySettings();
+
+        const tip = document.createElement('div');
+        tip.className = 'dz-tip';
+        tip.innerHTML = '⚠ 荣耀 / Android 13+：如果开关是灰色的，先去<br>设置 → 应用 → 运气王预言家 → 右上 ⋮ →「允许受限设置」（需指纹确认），<br>然后回来重新开启';
+        dz.appendChild(tip);
+      }
+
+      dz.appendChild(icon);
+      dz.appendChild(main);
+      dz.appendChild(sub);
+      dz.appendChild(btn);
+    }
+
+    window.__androidStatus = function (st) {
+      try {
+        renderAndroidStatus(!!st.serviceEnabled);
+        return true;
+      } catch (e) { return false; }
+    };
+
+    // 首次渲染（LuckBridge 由原生注入，isServiceEnabled 直接可用）
+    try { renderAndroidStatus(window.LuckBridge.isServiceEnabled()); } catch (e) {}
+  }
 })();
