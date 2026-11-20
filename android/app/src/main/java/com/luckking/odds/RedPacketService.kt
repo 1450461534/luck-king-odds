@@ -28,6 +28,10 @@ class RedPacketService : AccessibilityService() {
         @Volatile
         var lastEventTime: String = "尚未收到"
 
+        /** 处理链路追踪（最新在前，H5 状态卡直接显示） */
+        @Volatile
+        var debugLog: String = "（暂无记录）"
+
         /** MainActivity 就绪后把数据直接推进 H5；未就绪时回退到悬浮窗 */
         @Volatile
         var uiSink: ((String) -> Unit)? = null
@@ -37,6 +41,11 @@ class RedPacketService : AccessibilityService() {
     private var pending = false
     private var lastSent: String? = null
 
+    private fun dbg(msg: String) {
+        val ts = SimpleDateFormat("HH:mm:ss.SSS", Locale.CHINA).format(Date())
+        debugLog = "[$ts] $msg\n" + debugLog.take(2000)
+    }
+
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
         val pkg = event.packageName?.toString() ?: return
@@ -44,27 +53,44 @@ class RedPacketService : AccessibilityService() {
         lastEventTime = SimpleDateFormat("HH:mm:ss", Locale.CHINA).format(Date())
 
         val type = event.eventType
+        val typeName = when (type) {
+            AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> "窗口切换"
+            AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED -> "内容变化"
+            AccessibilityEvent.TYPE_VIEW_SCROLLED -> "滚动"
+            else -> "type=$type"
+        }
         val relevant = type == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED ||
             type == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED ||
             type == AccessibilityEvent.TYPE_VIEW_SCROLLED
-        if (!relevant) return
-        if (pending) return
+        if (!relevant) {
+            dbg("收到微信事件（$typeName）→ 非关注类型，跳过")
+            return
+        }
+        dbg("收到微信事件（$typeName）→ 700ms 后读屏")
+        if (pending) {
+            dbg("已有待处理任务，合并本次")
+            return
+        }
         pending = true
         handler.postDelayed({ pending = false; collect() }, 700)
     }
 
-    /** 深度遍历节点树，收集 (纵向坐标, 文本)，按 y 排序拼成行序列 */
     private fun collect() {
         try {
             collectInner()
         } catch (e: Exception) {
-            // 错误可见化：悬浮窗直接显示异常信息，便于远程排查
+            dbg("collect 异常: " + (e.message ?: e.javaClass.simpleName))
             FloatingResult.show(this, "读取节点出错: " + (e.message ?: e.javaClass.simpleName))
         }
     }
 
     private fun collectInner() {
-        val root: AccessibilityNodeInfo = rootInActiveWindow ?: return
+        val root: AccessibilityNodeInfo = rootInActiveWindow
+        if (root == null) {
+            dbg("✗ rootInActiveWindow=null（活动窗口不可读取）")
+            return
+        }
+        val rootPkg = root.packageName?.toString() ?: "?"
         val nodes = mutableListOf<Pair<Int, String>>()
         fun walk(n: AccessibilityNodeInfo?) {
             if (n == null) return
@@ -76,19 +102,32 @@ class RedPacketService : AccessibilityService() {
             for (i in 0 until n.childCount) walk(n.getChild(i))
         }
         walk(root)
+        dbg("root包名=$rootPkg，收集到 ${nodes.size} 个文本节点")
 
-        if (nodes.isEmpty()) return
+        if (nodes.isEmpty()) {
+            dbg("✗ 窗口内没有文本节点（可能窗口被 ROM 隔离）")
+            return
+        }
         val rows = nodes.sortedBy { it.first }.joinToString("\n") { it.second }
 
-        // 只在像「红包详情页」时推送：出现金额 + 红包特征文案
-        if (!rows.contains("元")) return
+        if (!rows.contains("元")) {
+            dbg("✗ 过滤：行文本中没有「元」字（不是红包详情页）前60字=" + rows.take(60).replace("\n", " / "))
+            return
+        }
         val looksLikeRedPacket = rows.contains("红包") ||
             rows.contains("已领取") ||
             rows.contains("手气最佳") ||
             rows.contains("运气王")
-        if (!looksLikeRedPacket) return
-        if (rows == lastSent) return
+        if (!looksLikeRedPacket) {
+            dbg("✗ 过滤：有金额但无红包特征词 前60字=" + rows.take(60).replace("\n", " / "))
+            return
+        }
+        if (rows == lastSent) {
+            dbg("内容与上次相同，跳过推送")
+            return
+        }
 
+        dbg("✓ 通过全部过滤 → 弹悬浮窗 + 推送 H5")
         lastSent = rows
         pendingRows = rows
         // 双通道：悬浮窗始终弹出（叠加层自带权限）；MainActivity 存活时 WebView 同步收数据
@@ -98,6 +137,6 @@ class RedPacketService : AccessibilityService() {
     }
 
     override fun onInterrupt() {
-        // 服务中断时无需处理
+        dbg("服务被系统中断 onInterrupt")
     }
 }

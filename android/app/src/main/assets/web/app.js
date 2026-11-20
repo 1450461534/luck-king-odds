@@ -662,6 +662,10 @@
       ev.style.cssText = 'font-size:12px;color:#8a8a90;margin-top:10px;';
       ev.textContent = '服务状态诊断 · 最近收到微信事件: ' + (st.lastEvent || '尚未收到');
 
+      const dbg = document.createElement('pre');
+      dbg.style.cssText = 'font-size:11px;line-height:1.5;color:#2b6cb0;background:#f0f6ff;border-radius:8px;padding:8px;margin-top:8px;max-height:180px;overflow:auto;text-align:left;white-space:pre-wrap;word-break:break-all;';
+      dbg.textContent = st.debugLog || '（暂无）';
+
       const btn = document.createElement('button');
       btn.style.cssText = 'margin-top:16px;padding:12px 26px;background:#d0453e;color:#fff;font-size:15px;font-weight:600;border:none;border-radius:10px;cursor:pointer;';
 
@@ -686,6 +690,7 @@
       dz.appendChild(main);
       dz.appendChild(sub);
       dz.appendChild(ev);
+      dz.appendChild(dbg);
       dz.appendChild(btn);
     }
 
