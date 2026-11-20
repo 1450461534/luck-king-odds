@@ -227,6 +227,58 @@
     }
   }
 
+  /** 多张截图：逐张识别后合并（行序需人工核对，确认页可增删改） */
+  async function handleFiles(fileList) {
+    const list = Array.from(fileList || []).filter(f => f && f.type && f.type.indexOf('image') === 0);
+    if (!list.length) return;
+    if (list.length === 1) return handleFile(list[0]);
+    $('uploadErr').textContent = '';
+    $('skipOcr').classList.add('hidden');
+    const all = [];
+    try {
+      for (let i = 0; i < list.length; i++) {
+        setProgress(`识别第 ${i + 1}/${list.length} 张…`, i / list.length);
+        const { parsed } = await LKOCR.recognizeImageFile(list[i], (s, p) =>
+          setProgress(`识别第 ${i + 1}/${list.length} 张 · ${s}`, (i + p) / list.length));
+        all.push(parsed);
+      }
+      $('progWrap').classList.add('hidden');
+      renderConfirm(mergeParsed(all));
+    } catch (e) {
+      $('progText').textContent = '识别失败';
+      $('uploadErr').textContent = (e && e.message ? e.message : '未知错误') + '（失败可手动补全）';
+      $('skipOcr').classList.remove('hidden');
+    }
+  }
+
+  /** 合并多张截图的解析结果：记录拼接 + 总个数取最大 + 提示人工核对 */
+  function mergeParsed(list) {
+    const records = [];
+    let finished = null, totalPeople = null, claimed = null;
+    let luckyIdx = null, meIdxGuess = null, myTopAmount = null;
+    for (const p of list) {
+      records.push(...p.records);
+      if (p.totalPeople !== null && (totalPeople === null || p.totalPeople > totalPeople)) totalPeople = p.totalPeople;
+      if (p.claimed !== null && (claimed === null || p.claimed > claimed)) claimed = p.claimed;
+      if (p.finished === true) finished = true;
+      if (p.myTopAmount !== null && meIdxGuess === null) {
+        myTopAmount = p.myTopAmount;
+        meIdxGuess = p.meIdxGuess;
+      }
+      if (p.luckyIdx !== null && luckyIdx === null) luckyIdx = p.luckyIdx;
+    }
+    return {
+      finished: finished,
+      totalPeople: totalPeople,
+      claimed: claimed,
+      records: records,
+      luckyIdx: luckyIdx,
+      meIdxGuess: meIdxGuess,
+      myTopAmount: myTopAmount,
+      warnings: ['多张截图已合并：请核对每行金额与顺序，重复的行直接删除']
+    };
+  }
+
   // ---------------------------------------------------------------------------
   // 计算 + 结果渲染
   // ---------------------------------------------------------------------------
@@ -347,6 +399,16 @@
   function renderResult(result, ctx, pairedRec) {
     const { records, n, meIdx, finished, luckyIdx } = ctx;
     const obsNames = records.map(r => r.name);
+
+    // APK 桥接：结果回传悬浮窗（网页环境中 window.LuckBridge 不存在，自动跳过）
+    if (window.LuckBridge) {
+      try {
+        window.LuckBridge.onResult(JSON.stringify({
+          isFinished: finished,
+          pLuckyMe: result.pLuckyMe
+        }));
+      } catch (e) { /* 桥接失败不影响页面 */ }
+    }
 
     // ---- 主卡片 ----
     if (finished) {
@@ -514,12 +576,12 @@
   const dz = $('dropzone');
   const fileInput = $('file');
   dz.addEventListener('click', () => fileInput.click());
-  fileInput.addEventListener('change', () => { handleFile(fileInput.files[0]); fileInput.value = ''; });
+  fileInput.addEventListener('change', () => { handleFiles(fileInput.files); fileInput.value = ''; });
   dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
   dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
   dz.addEventListener('drop', e => {
     e.preventDefault(); dz.classList.remove('drag');
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+    if (e.dataTransfer.files && e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
   });
   document.addEventListener('paste', e => {
     if ($('view-upload').hidden && $('view-confirm').hidden) return;
@@ -560,4 +622,17 @@
   });
 
   showView('upload');
+
+  // ---------------------------------------------------------------------------
+  // Android APK 桥接：无障碍服务把微信红包详情页的行文本推进来（纯只读）
+  // ---------------------------------------------------------------------------
+  window.__fromAndroid = function (rowsText) {
+    try {
+      const parsed = window.LKOCR.parseReceiptText(String(rowsText || ''));
+      if (!parsed.records.length && parsed.totalPeople === null) return false;
+      renderConfirm(parsed);
+      return true;
+    } catch (e) { return false; }
+  };
+  window.__appReady = true;
 })();

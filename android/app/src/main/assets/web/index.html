@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>运气王预言家 · Luck King Odds</title>
+<style>
+  :root {
+    --red: #d0453e;
+    --red-dark: #b03a34;
+    --red-soft: #fdf1f0;
+    --gold: #e8a23e;
+    --bg: #f6f6f7;
+    --card: #ffffff;
+    --text: #2b2b2e;
+    --muted: #8a8a90;
+    --line: #ececee;
+    --green: #2e9e5b;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; padding: 14px 12px 44px;
+    background: var(--bg); color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+    font-size: 15px; line-height: 1.55;
+  }
+  .wrap { max-width: 540px; margin: 0 auto; }
+  header { display: flex; align-items: center; justify-content: space-between; margin: 10px 2px 16px; }
+  h1 { font-size: 21px; margin: 0; letter-spacing: 1px; }
+  .tagline { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .iconbtn {
+    border: 1px solid var(--line); background: var(--card); border-radius: 10px;
+    padding: 7px 12px; font-size: 13px; cursor: pointer; color: #55555c;
+  }
+  .iconbtn:active { background: var(--red-soft); }
+  .card {
+    background: var(--card); border-radius: 16px; padding: 18px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.05); margin-bottom: 13px;
+  }
+  .hidden { display: none !important; }
+
+  /* 上传区 */
+  #dropzone {
+    border: 2px dashed #d9b8b5; border-radius: 18px; background: var(--card);
+    padding: 44px 20px; text-align: center; cursor: pointer;
+    transition: all .15s ease;
+  }
+  #dropzone:hover, #dropzone.drag { border-color: var(--red); background: var(--red-soft); }
+  .dz-icon { font-size: 44px; }
+  .dz-main { font-size: 17px; font-weight: 600; margin-top: 10px; }
+  .dz-sub { color: var(--muted); font-size: 13px; margin-top: 5px; }
+  .dz-tip { color: var(--green); font-size: 12px; margin-top: 14px; }
+  .samples { text-align: center; color: var(--muted); font-size: 13px; margin-top: 14px; }
+  .samples button {
+    border: none; background: none; color: var(--red); font-size: 13px;
+    padding: 4px 6px; cursor: pointer; text-decoration: underline;
+  }
+  .prog-wrap { margin-top: 16px; }
+  .prog-text { color: var(--muted); font-size: 13px; text-align: center; margin-bottom: 8px; }
+  .prog-bar { height: 8px; background: #eee; border-radius: 4px; overflow: hidden; }
+  .prog-bar span { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--gold), var(--red)); transition: width .2s; }
+
+  /* 通用 */
+  .back { border: none; background: none; color: var(--red); font-size: 14px; cursor: pointer; padding: 6px 2px; margin-bottom: 6px; }
+  .primary {
+    width: 100%; padding: 13px; background: var(--red); color: #fff;
+    font-size: 16px; font-weight: 600; border: none; border-radius: 12px;
+    cursor: pointer; letter-spacing: 2px; margin-top: 14px;
+  }
+  .primary:disabled { opacity: .5; cursor: wait; }
+  .ghost {
+    width: 100%; padding: 11px; background: none; color: var(--red);
+    font-size: 14px; border: 1px solid #e5c2c0; border-radius: 12px; cursor: pointer; margin-top: 10px;
+  }
+  .err { color: var(--red); font-size: 13px; min-height: 18px; margin: 8px 0 0; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+  .badge.done { background: var(--red-soft); color: var(--red); }
+  .badge.live { background: #eaf7ef; color: var(--green); }
+  .badge.warnb { background: #fdf6e7; color: #b07b1e; }
+  label { display: block; font-size: 13px; color: #55555c; margin: 12px 0 4px; }
+  input[type=number], input[type=text], select {
+    width: 100%; padding: 9px 10px; font-size: 15px;
+    border: 1px solid var(--line); border-radius: 9px; background: #fbfbfc; outline: none; font-family: inherit;
+  }
+  input:focus { border-color: var(--red); background: #fff; }
+  details { margin-top: 12px; font-size: 13px; color: #55555c; }
+  .opt label { display: inline-flex; align-items: center; gap: 5px; margin: 6px 10px 6px 0; }
+  .opt input[type=number], .opt select { width: auto; min-width: 110px; }
+
+  /* 确认页记录行 */
+  .rec-row {
+    display: flex; align-items: center; gap: 6px;
+    padding: 7px 0; border-bottom: 1px solid var(--line);
+  }
+  .rec-row:last-of-type { border-bottom: none; }
+  .rec-row .idx { width: 34px; color: var(--muted); font-size: 13px; flex: none; }
+  .rec-row.me-row { background: var(--red-soft); border-radius: 8px; padding-left: 6px; padding-right: 6px; }
+  .rec-row input.amt {
+    width: 84px; flex: none; padding: 6px 7px; font-size: 14px;
+    border: 1px solid var(--line); border-radius: 7px; text-align: right; background: #fbfbfc; font-family: inherit;
+  }
+  .rec-row .nm { flex: 1; font-size: 12.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rec-row .luckytag { color: var(--gold); font-size: 12px; flex: none; }
+  .rec-row label.me { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; color: #55555c; margin: 0; flex: none; cursor: pointer; }
+  .rec-row .mini {
+    border: none; background: none; color: var(--muted); cursor: pointer;
+    font-size: 14px; padding: 4px; flex: none; line-height: 1;
+  }
+  .rec-row .mini:hover { color: var(--red); }
+  .list-head { font-size: 13px; color: #55555c; margin: 14px 0 4px; font-weight: 600; }
+
+  /* 结果页 */
+  .hero { text-align: center; padding: 28px 18px; }
+  .big { font-size: 48px; font-weight: 700; color: var(--red); line-height: 1.1; }
+  .cap { color: #55555c; font-size: 14px; margin-top: 8px; }
+  .extra { color: var(--muted); font-size: 13px; margin-top: 6px; }
+  h2 { font-size: 15px; margin: 0 0 10px; color: #3a3a40; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th { text-align: left; color: var(--muted); font-weight: 500; padding: 4px 6px; border-bottom: 1px solid var(--line); }
+  td { padding: 6px; border-bottom: 1px solid var(--line); }
+  tr:last-child td { border-bottom: none; }
+  .prow { display: flex; align-items: center; gap: 8px; margin: 7px 0; font-size: 13px; }
+  .prow .pl { width: 38px; color: #55555c; flex: none; }
+  .prow .bar { flex: 1; height: 12px; background: #efeff1; border-radius: 6px; overflow: hidden; }
+  .prow .bar span { display: block; height: 100%; background: var(--red); border-radius: 6px; }
+  .prow.me-row .bar span { background: linear-gradient(90deg, var(--gold), var(--red)); }
+  .prow.me-row .pl, .prow.me-row .pv { color: var(--red); font-weight: 700; }
+  .prow .pv { width: 52px; text-align: right; flex: none; }
+  .prow .pt { width: 110px; color: var(--muted); font-size: 12px; flex: none; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hint { color: var(--muted); font-size: 12px; margin: 10px 0 0; }
+  .pairbox { background: var(--red-soft); border-radius: 12px; padding: 12px 14px; font-size: 13.5px; }
+  .pairbox b.hit { color: var(--green); }
+  .pairbox b.miss { color: var(--red); }
+
+  /* 历史 */
+  .statgrid { display: flex; gap: 10px; text-align: center; }
+  .statgrid > div { flex: 1; background: #fbfbfc; border-radius: 12px; padding: 12px 4px; }
+  .statgrid .v { font-size: 20px; font-weight: 700; color: var(--red); }
+  .statgrid .k { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .hrow { display: flex; align-items: center; gap: 8px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+  .hrow:last-child { border-bottom: none; }
+  .hrow .ht { color: var(--muted); font-size: 12px; width: 74px; flex: none; }
+  .hrow .hd { flex: 1; }
+  .hrow .hp { color: var(--red); font-weight: 600; flex: none; }
+  .hrow .hr { flex: none; width: 62px; text-align: right; }
+  .hit { color: var(--green); font-weight: 600; }
+  .miss { color: var(--red); font-weight: 600; }
+  .pending { color: var(--muted); }
+  #clearHist { border: none; background: none; color: var(--muted); font-size: 12px; cursor: pointer; margin-top: 10px; text-decoration: underline; }
+
+  footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 24px; line-height: 1.8; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>🧧 运气王预言家</h1>
+      <div class="tagline">丢一张红包截图 · 纯本地识别 · 数据不出设备</div>
+    </div>
+    <button class="iconbtn" id="btnHist">📜 历史</button>
+  </header>
+
+  <main>
+    <!-- 视图：上传 -->
+    <section id="view-upload">
+      <div id="dropzone">
+        <div class="dz-icon">🧧</div>
+        <div class="dz-main">丢红包详情页截图（可多张）</div>
+        <div class="dz-sub">点击选择 · 拖拽进来 · Ctrl+V 粘贴</div>
+        <div class="dz-tip">🔒 识别在你的设备本地完成，图片不会上传到任何服务器</div>
+      </div>
+      <input type="file" id="file" accept="image/*" multiple hidden>
+      <div class="samples">
+        没有截图？试试示例：<button data-sample="finished">已抢完（1元/10个）</button>·<button data-sample="ongoing">抢到一半</button>
+      </div>
+      <div class="prog-wrap hidden" id="progWrap">
+        <div class="prog-text" id="progText"></div>
+        <div class="prog-bar"><span id="progBar"></span></div>
+        <div class="err" id="uploadErr"></div>
+        <button class="ghost hidden" id="skipOcr">识别不了？直接手动补全 →</button>
+      </div>
+    </section>
+
+    <!-- 视图：确认 -->
+    <section id="view-confirm" hidden>
+      <button class="back" id="backToUpload">← 重新选图</button>
+      <div class="card">
+        <div>
+          <span class="badge done" id="statusBadge" hidden></span>
+          <span class="badge warnb" id="warnBadge" hidden></span>
+        </div>
+        <label class="finchk" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#55555c;margin:10px 0 0;cursor:pointer;">
+          <input type="checkbox" id="finChk" style="width:auto;">
+          这个红包已经抢完了（截图缺几行也能判定运气王）
+        </label>
+        <label>红包总个数</label>
+        <input id="totalN" type="number" min="2" max="999" placeholder="截图没认出来？手动补一下">
+        <div class="list-head">领取记录（已按抢的先后排序）</div>
+        <div id="recList"></div>
+        <div class="hint">点「我」标记你自己在哪一行（还没抢就不选）；＋ 在该行下方插一条补全记录</div>
+        <details>
+          <summary>高级选项（总额先验 / 精度）</summary>
+          <div class="opt">
+            总额先验：<br>
+            <label><input type="radio" name="prior" value="int" checked> 任意整数元</label>
+            <label><input type="radio" name="prior" value="lucky"> 常见面额</label>
+            <label><input type="radio" name="prior" value="custom"> 自定义</label>
+            <input id="custom" type="text" placeholder="自定义候选总额，如 25, 30, 50, 88" disabled>
+            <label>金额上限（元）</label>
+            <input id="limit" type="number" min="1" value="200">
+            <label>模拟精度</label>
+            <select id="samples">
+              <option value="5000">快（5 千 / 候选）</option>
+              <option value="30000" selected>标准（3 万 / 候选）</option>
+              <option value="100000">精细（10 万 / 候选）</option>
+            </select>
+          </div>
+        </details>
+        <button class="primary" id="calc">🔮 计算</button>
+        <p class="err" id="confirmErr"></p>
+      </div>
+    </section>
+
+    <!-- 视图：结果 -->
+    <section id="view-result" hidden>
+      <button class="back" id="backToConfirm">← 返回修改</button>
+      <div class="card hero">
+        <div class="big" id="bigP"></div>
+        <div class="cap" id="bigCap"></div>
+        <div class="extra" id="bigExtra"></div>
+      </div>
+      <div class="card" id="pairCard" hidden>
+        <div class="pairbox" id="pairBox"></div>
+      </div>
+      <div class="card" id="totalCard">
+        <h2>💰 红包总额估计</h2>
+        <p id="totalEst" style="font-size:13.5px;margin:0 0 10px;"></p>
+        <table>
+          <thead><tr><th>总额</th><th>概率</th><th>此总额下你运气王</th></tr></thead>
+          <tbody id="candBody"></tbody>
+        </table>
+      </div>
+      <div class="card">
+        <h2>📊 各位置成为运气王的概率</h2>
+        <div id="posBars"></div>
+        <p class="hint">后抢方差更大：更容易爆运气王，也更容易垫底。已抢的大额会「压住」它前面的位置。</p>
+      </div>
+      <div class="card" id="meCard">
+        <h2>🪙 你能抢到多少钱</h2>
+        <p id="meAmount" style="font-size:13.5px;margin:0;"></p>
+      </div>
+    </section>
+
+    <!-- 视图：历史 -->
+    <section id="view-history" hidden>
+      <button class="back" id="backFromHist">← 返回</button>
+      <div class="card">
+        <h2>📈 预测 VS 实际</h2>
+        <div class="statgrid" id="histStats"></div>
+        <p class="hint" id="histCalib"></p>
+      </div>
+      <div class="card">
+        <div id="histList"></div>
+        <div style="text-align:center"><button id="clearHist">清空历史</button></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    仅供学习娱乐 · 模型为社区共识的二倍均值法，非微信官方算法<br>
+    不含任何自动抢红包功能，与微信 / 腾讯无关 · MIT License
+  </footer>
+</div>
+
+<script src="luck.js"></script>
+<script src="ocr.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
+<script>
+// APK 读屏模式：隐藏上传视图，改为提示打开微信红包详情页
+if (window.LuckBridge) {
+  (function () {
+    const dz = document.getElementById('view-upload');
+    if (dz) dz.classList.add('hidden');
+    const tag = document.querySelector('.tagline');
+    if (tag) tag.textContent = '🤖 读屏模式：打开微信红包详情页即可自动识别';
+  })();
+}
+</script>

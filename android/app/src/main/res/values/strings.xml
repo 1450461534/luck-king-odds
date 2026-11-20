@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">运气王预言家</string>
+    <string name="service_label">运气王预言家 · 红包读屏</string>
+    <string name="a11y_desc">读取微信红包详情页的金额列表（纯只读），用于计算你成为运气王的概率。不模拟任何点击、不上传任何数据、本应用不申请网络权限。</string>
+</resources>
