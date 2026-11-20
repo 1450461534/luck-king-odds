@@ -140,7 +140,7 @@ class RedPacketService : AccessibilityService() {
         dbg("root=微信，收集到 ${nodes.size} 个文本节点")
 
         if (nodes.isEmpty()) {
-            dbg("✗ 窗口内没有文本节点（可能窗口被 ROM 隔离）")
+            dbg("✗ 荣耀/华为系 ROM 已隔离微信窗口内容（第三方无障碍读不到）——请改用截图方式：微信里截图 → 打开本应用自动识别")
             return
         }
         val rows = nodes.sortedBy { it.first }.joinToString("\n") { it.second }

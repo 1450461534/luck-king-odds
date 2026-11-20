@@ -11,27 +11,16 @@ android {
         applicationId 'com.luckking.odds'
         minSdk 26
         targetSdk 34
-        versionCode 7
-        versionName '1.0.7'
-    }
-
-    signingConfigs {
-        appSign {
-            storeFile rootProject.file('keystore/lko.p12')
-            storePassword 'luckking'
-            keyAlias 'lkoking'
-            keyPassword 'luckking'
-            storeType 'PKCS12'
-        }
+        versionCode 8
+        versionName '1.1.0'
     }
 
     buildTypes {
         debug {
-            signingConfig signingConfigs.appSign
+            minifyEnabled false
         }
         release {
             minifyEnabled false
-            signingConfig signingConfigs.appSign
         }
     }
     compileOptions {
@@ -43,7 +32,8 @@ android {
     }
 }
 
-// 零第三方依赖：只用 Android SDK 本身，WebView 里跑网页版全部计算逻辑
-// keystore/lko.p12 为项目自包含的固定签名证书（纯本地玩具应用，仅用于升级连续性）
+// OCR：ML Kit 中文文字识别（bundled 版，模型打进 APK，无需 GMS、无需网络）
+// 其他零第三方依赖：WebView 复用网页版计算逻辑，无障碍服务保留做状态诊断
 dependencies {
+    implementation 'com.google.mlkit:text-recognition-chinese:16.0.1'
 }

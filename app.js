@@ -624,15 +624,41 @@
   showView('upload');
 
   // ---------------------------------------------------------------------------
-  // Android APK 桥接：无障碍服务把微信红包详情页的行文本推进来（纯只读）
+  // Android APK 桥接：ML Kit 离线 OCR 的行文本推进来（纯本地）
   // ---------------------------------------------------------------------------
   window.__fromAndroid = function (rowsText) {
+    const text = String(rowsText || '');
     try {
-      const parsed = window.LKOCR.parseReceiptText(String(rowsText || ''));
-      if (!parsed.records.length && parsed.totalPeople === null) return false;
+      if (text.indexOf('__OCR_ERROR__') === 0) {
+        renderAndroidNotice('✗ 截图识别失败: ' + text.slice(13) + '\n请确认截图清晰且包含红包详情页');
+        return false;
+      }
+      const parsed = window.LKOCR.parseReceiptText(text);
+      if (!parsed.records.length && parsed.totalPeople === null) {
+        if (window.LuckBridge) {
+          renderAndroidNotice('最新截图里没识别到红包详情页（金额列表）\n请在微信里截一张「红包详情页」（带金额列表的页面）的图，再打开本应用');
+        }
+        return false;
+      }
       renderConfirm(parsed);
       return true;
     } catch (e) { return false; }
+  };
+
+  /** APK 状态卡上方的临时提示条（识别失败/非红包截图等） */
+  function renderAndroidNotice(msg) {
+    const dz = $('dropzone');
+    const old = document.getElementById('androidNotice');
+    if (old) old.remove();
+    const tip = document.createElement('div');
+    tip.id = 'androidNotice';
+    tip.style.cssText = 'background:#fdf6e7;border:1px solid #e8d9a0;border-radius:10px;padding:12px;margin-bottom:12px;font-size:13px;color:#b07b1e;white-space:pre-wrap;text-align:left;';
+    tip.textContent = msg;
+    dz.insertBefore(tip, dz.firstChild);
+  }
+
+  window.__ocrStatus = function (msg) {
+    if (window.LuckBridge && msg) renderAndroidNotice(msg);
   };
   window.__appReady = true;
 
