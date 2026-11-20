@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- 红包主体（白色圆角矩形） -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M32,30 h44 a5,5 0 0 1 5,5 v46 a5,5 0 0 1 -5,5 h-44 a5,5 0 0 1 -5,-5 v-46 a5,5 0 0 1 5,-5 z" />
+    <!-- 金色封盖弧带 -->
+    <path
+        android:fillColor="#E8A23E"
+        android:pathData="M27,33 c11,13 43,13 54,0 l0,9 c-11,13 -43,13 -54,0 z" />
+    <!-- 中央圆形封扣 -->
+    <path
+        android:fillColor="#E8A23E"
+        android:pathData="M54,54 m-9,0 a9,9 0 1 0 18,0 a9,9 0 1 0 -18,0 z" />
+    <!-- 封扣内白点 -->
+    <path
+        android:fillColor="#D0453E"
+        android:pathData="M54,54 m-4,0 a4,4 0 1 0 8,0 a4,4 0 1 0 -8,0 z" />
+</vector>
