@@ -97,17 +97,46 @@ class RedPacketService : AccessibilityService() {
             dbg("✗ 跳过：当前活动窗口是 $rootPkg（不是微信），不处理")
             return
         }
-        val nodes = mutableListOf<Pair<Int, String>>()
-        fun walk(n: AccessibilityNodeInfo?) {
-            if (n == null) return
-            n.text?.toString()?.takeIf { it.isNotBlank() }?.let { text ->
-                val rect = android.graphics.Rect()
-                n.getBoundsInScreen(rect)
-                nodes.add(rect.top to text)
+
+        // 关键：红包详情页的内容可能在独立的窗口层（rootInActiveWindow 子树可能为空），
+        // 因此遍历系统所有可见窗口，收集微信全部窗口的节点
+        val windowRoots = mutableListOf<Pair<String, AccessibilityNodeInfo>>()
+        windowRoots.add("活动窗口" to root)
+        try {
+            for (w in windows) {
+                val wr = w.root ?: continue
+                val wp = wr.packageName?.toString() ?: continue
+                if (wp == "com.tencent.mm" && wr != root) {
+                    windowRoots.add("窗口#" + w.id + "(layer=" + w.layer + ")" to wr)
+                }
             }
-            for (i in 0 until n.childCount) walk(n.getChild(i))
+        } catch (e: Exception) {
+            dbg("遍历 windows 异常: " + (e.message ?: e.javaClass.simpleName))
         }
-        walk(root)
+        dbg("候选窗口 " + windowRoots.size + " 个（活动窗口 + 微信其他窗口）")
+
+        val nodes = mutableListOf<Pair<Int, String>>()
+        val seen = HashSet<String>()
+        var windowStat = StringBuilder()
+        for ((label, wroot) in windowRoots) {
+            var count = 0
+            fun walk(n: AccessibilityNodeInfo?) {
+                if (n == null) return
+                n.text?.toString()?.takeIf { it.isNotBlank() }?.let { text ->
+                    val rect = android.graphics.Rect()
+                    n.getBoundsInScreen(rect)
+                    val key = rect.top.toString() + "|" + text
+                    if (seen.add(key)) {
+                        nodes.add(rect.top to text)
+                        count++
+                    }
+                }
+                for (i in 0 until n.childCount) walk(n.getChild(i))
+            }
+            walk(wroot)
+            windowStat.append(label).append("=").append(count).append("个 ")
+        }
+        dbg("各窗口节点数: " + windowStat + "（合并去重后 " + nodes.size + " 个）")
         dbg("root=微信，收集到 ${nodes.size} 个文本节点")
 
         if (nodes.isEmpty()) {
